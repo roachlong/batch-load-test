@@ -1,0 +1,31 @@
+
+<div class="statsContainer pt-3">
+    <table class="table">
+        <thead><tr>
+            <th scope="col">STATUS</th>
+            <th scope="col">BATCH SIZE</th>
+            <th scope="col">DURATION</th>
+            <th scope="col">ELAPSED</th>
+            <th scope="col">CONN</th>
+            <th scope="col">STMT</th>
+            <th scope="col">INS</th>
+            <th scope="col">THROUGHPUT</th>
+            <th scope="col">START TIME</th>
+        </tr></thead>
+        <tbody>
+        {#for stat in stats}
+        <tr>
+            <td><em><strong>{stat.type} - {stat.status}</strong></em></td>
+            <td>{stat.batchSize} records</td>
+            <td>{stat.duration} min</td>
+            <td>{stat.elapsed} sec</td>
+            <td>{stat.connections}</td>
+            <td>{stat.statements}</td>
+            <td>{stat.records}</td>
+            <td>{stat.throughput.formatToTwoDecimalPlaces} per sec</td>
+            <td><small>{stat.startTime}</small></td>
+        </tr>
+        {/for}
+        </tbody>
+    </table>
+</div>

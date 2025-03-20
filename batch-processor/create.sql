@@ -1,0 +1,2 @@
+create table Record (leader boolean, createdOn timestamp(6) with time zone, updatedOn timestamp(6) with time zone, process_id uuid not null, processName varchar(255) not null, primary key (process_id));
+create table Stats (batchSize integer, connections integer, duration integer, records integer, statements integer, throughput float(53), elapsed bigint, startTime timestamp(6) with time zone, id uuid not null, status varchar(255), type varchar(255), primary key (id));
