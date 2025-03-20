@@ -1,6 +1,11 @@
 # batch-load-test
 This is a simple test harness to demonstrate throughput of a batch load into CRDB using single statement, multi-statement, and multi-value transactions
 
+Clone the repository to your local workspace
+```
+git clone https://github.com/roachlong/batch-load-test.git
+```
+
 ## Environment Setup
 To run the application you'll need Java, Maven and a few other tools installed.  The following steps can be followed on MacOS Silicon or similar.
 
