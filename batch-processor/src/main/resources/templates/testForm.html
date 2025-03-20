@@ -1,0 +1,78 @@
+{#include base.html}
+{#title}Execute Batch{/title}
+{#body}
+Use the form below to submit a simple batch load test.
+<form id="newTestForm" method="post">
+    <input type="hidden" name="{inject:csrf.parameterName}" value="{inject:csrf.token}" />
+    <div class="form-group mt-3">
+        <label for="type">Type</label>
+        <select class="form-control" name="type" id="type" aria-describedby="typeHelp">
+            <option>SINGLE</option>
+            <option>BULK</option>
+            <option selected="true">BATCH</option>
+        </select>
+        <small id="typeHelp" class="form-text text-muted">
+            SINGLE for single statement execution,
+            BULK for multi-statement execution,
+            and BATCH for single multi-value statement execution
+        </small>
+    </div>
+    <div class="form-group mt-3">
+        <label for="duration">Duration</label>
+        <input type="number" class="form-control" name="duration" id="duration" min="1" step="1" value="5" aria-describedby="durationHelp"/>
+        <small id="durationHelp" class="form-text text-muted">
+            the number of minutes you want to execute the test
+        </small>
+    </div>
+    <div class="form-group mt-3">
+        <label for="size">Bulk/Batch Size</label>
+        <input type="number" class="form-control" name="size" id="size" min="1" step="1" value="128" aria-describedby="sizeHelp"/>
+        <small id="sizeHelp" class="form-text text-muted">
+            does not apply for single statement execution
+        </small>
+    </div>
+    <div class="form-group mt-3">
+        <label for="connections">Connections</label>
+        <input type="number" class="form-control" name="connections" id="connections" min="1" step="1" value="20" aria-describedby="connectionsHelp"/>
+        <small id="connectionsHelp" class="form-text text-muted">
+            how many connections will be used to execute the batch
+        </small>
+    </div>
+    <button type="submit" class="btn btn-primary mt-3">Submit</button>
+</form>
+
+<div class="statsContainer">
+
+</div>
+
+<script>
+    $(() => {
+        const newTestForm = $("#newTestForm");
+        newTestForm.submit(e => {
+            e.preventDefault();
+            $.ajax({
+                type: "POST",
+                url: "/service",
+                data: newTestForm.serialize()
+            }).done(data => {
+                setTimeout(loadStats, 5000);
+            });
+            return false;
+        })
+    });
+
+    function loadStats() {
+        $.ajax({
+            headers: {
+                Accept: "text/html",
+            },
+            url: "/service/stats"
+        }).done(data => {
+            $(".statsContainer").html(data);
+        });
+    }
+
+    setInterval(loadStats, 60000);
+</script>
+{/body}
+{/include}
