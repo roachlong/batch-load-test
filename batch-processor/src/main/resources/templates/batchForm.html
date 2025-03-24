@@ -8,13 +8,13 @@ Use the form below to submit a simple batch load test.
         <label for="type">Type</label>
         <select class="form-control" name="type" id="type" aria-describedby="typeHelp">
             <option>SINGLE</option>
-            <option>BULK</option>
-            <option selected="true">BATCH</option>
+            <option>BATCH</option>
+            <option selected="true">MULTI-VALUE</option>
         </select>
         <small id="typeHelp" class="form-text text-muted">
             SINGLE for single statement execution,
-            BULK for multi-statement execution,
-            and BATCH for single multi-value statement execution
+            BATCH for execution of a statement batch,
+            and MULTI-VALUE for execution of multi-value inserts
         </small>
     </div>
     <div class="form-group mt-3">
@@ -25,7 +25,7 @@ Use the form below to submit a simple batch load test.
         </small>
     </div>
     <div class="form-group mt-3">
-        <label for="size">Bulk/Batch Size</label>
+        <label for="size">Batch Size</label>
         <input type="number" class="form-control" name="size" id="size" min="1" step="1" value="128" aria-describedby="sizeHelp"/>
         <small id="sizeHelp" class="form-text text-muted">
             does not apply for single statement execution

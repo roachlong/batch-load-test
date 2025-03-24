@@ -77,13 +77,13 @@ public class DataLoadResource {
                     batch.statements += 1;
                     batch.records += 1;
                     break;
-                case "BULK":
-                    bulkRun(batch.batchSize);
+                case "BATCH":
+                    batchRun(batch.batchSize);
                     batch.statements += batch.batchSize;
                     batch.records += batch.batchSize;
                     break;
-                case "BATCH":
-                    batchRun(batch.batchSize);
+                case "MULTI-VALUE":
+                    multiValueRun(batch.batchSize);
                     batch.statements += 1;
                     batch.records += batch.batchSize;
                     break;
@@ -100,7 +100,7 @@ public class DataLoadResource {
     }
 
     @Transactional
-    public void bulkRun(int batchSize) {
+    public void batchRun(int batchSize) {
         Record.persist(IntStream.range(0, batchSize)
                 .mapToObj(x -> new Record())
                 .collect(Collectors.toList())
@@ -108,7 +108,7 @@ public class DataLoadResource {
     }
 
     @Transactional
-    public void batchRun(int batchSize) {
+    public void multiValueRun(int batchSize) {
         Record.multiValueInsert(IntStream.range(0, batchSize)
                 .mapToObj(x -> new Record())
                 .collect(Collectors.toList())
