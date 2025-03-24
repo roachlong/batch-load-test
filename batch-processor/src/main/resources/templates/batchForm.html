@@ -33,7 +33,7 @@ Use the form below to submit a simple batch load test.
     </div>
     <div class="form-group mt-3">
         <label for="connections">Connections</label>
-        <input type="number" class="form-control" name="connections" id="connections" min="1" step="1" value="20" aria-describedby="connectionsHelp"/>
+        <input type="number" class="form-control" name="connections" id="connections" min="1" step="1" value="4" aria-describedby="connectionsHelp"/>
         <small id="connectionsHelp" class="form-text text-muted">
             how many connections will be used to execute the batch
         </small>
@@ -52,7 +52,7 @@ Use the form below to submit a simple batch load test.
             e.preventDefault();
             $.ajax({
                 type: "POST",
-                url: "/service",
+                url: "/batch/service",
                 data: newTestForm.serialize()
             }).done(data => {
                 setTimeout(loadStats, 5000);
@@ -66,7 +66,7 @@ Use the form below to submit a simple batch load test.
             headers: {
                 Accept: "text/html",
             },
-            url: "/service/stats"
+            url: "/batch/service/stats"
         }).done(data => {
             $(".statsContainer").html(data);
         });

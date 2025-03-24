@@ -1,4 +1,4 @@
-package org.cockroachlabs.simulator;
+package org.cockroachlabs.simulator.batch;
 
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -15,28 +15,28 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-@Path("/service")
+@Path("/batch/service")
 public class DataLoadResource {
 
     @Inject
-    Template testForm;
+    Template batchForm;
 
     @Inject
-    Template statsTemplate;
+    Template batchTemplate;
 
     @GET
     @Path("/")
     @Produces(MediaType.TEXT_HTML)
-    public TemplateInstance showTestForm() {
-        return testForm.instance();
+    public TemplateInstance showBatchForm() {
+        return batchForm.instance();
     }
 
     @GET
     @Path("/stats")
     @Produces(MediaType.TEXT_HTML)
     public TemplateInstance getTestStatistics() {
-        final List<Stats> stats = Stats.findAllStats();
-        return statsTemplate.data("stats", stats);
+        final List<Batch> stats = Batch.findAllStats();
+        return batchTemplate.data("stats", stats);
     }
 
     @POST
@@ -47,51 +47,51 @@ public class DataLoadResource {
     public void executeNewTest(@FormParam("type") @DefaultValue("BATCH") String type,
                                @FormParam("duration") @DefaultValue("5") Integer duration,
                                @FormParam("size") @DefaultValue("128") Integer size,
-                               @FormParam("connections") @DefaultValue("20") Integer connections) {
-        Stats stats = new Stats();
-        stats.type = type;
-        stats.startTime = Instant.now();
-        stats.status = "RUNNING";
-        stats.duration = duration;
-        stats.elapsed = 0L;
-        stats.batchSize = type.equals("SINGLE") ? 1 : size;
-        stats.connections = connections;
-        stats.statements = 0;
-        stats.records = 0;
-        stats.throughput = 0.0;
-        Stats.persist(stats);
+                               @FormParam("connections") @DefaultValue("4") Integer connections) {
+        Batch batch = new Batch();
+        batch.type = type;
+        batch.startTime = Instant.now();
+        batch.status = "RUNNING";
+        batch.duration = duration;
+        batch.elapsed = 0L;
+        batch.batchSize = type.equals("SINGLE") ? 1 : size;
+        batch.connections = connections;
+        batch.statements = 0;
+        batch.records = 0;
+        batch.throughput = 0.0;
+        Batch.persist(batch);
         for (int i = 0; i < connections; i++) {
             CompletableFuture.runAsync(() -> {
-                executeLoad(SerializationUtils.clone(stats));
+                executeLoad(SerializationUtils.clone(batch));
             });
         }
     }
 
-    private void executeLoad(Stats stats) {
-        CompletableFuture.runAsync(() -> updateStats(stats));
-        Instant endTime = stats.startTime.plusSeconds(stats.duration * 60);
+    private void executeLoad(Batch batch) {
+        CompletableFuture.runAsync(() -> updateStats(batch));
+        Instant endTime = batch.startTime.plusSeconds(batch.duration * 60);
         while (Instant.now().isBefore(endTime)) {
-            switch (stats.type) {
+            switch (batch.type) {
                 case "SINGLE":
                     singleRun();
-                    stats.statements += 1;
-                    stats.records += 1;
+                    batch.statements += 1;
+                    batch.records += 1;
                     break;
                 case "BULK":
-                    bulkRun(stats.batchSize);
-                    stats.statements += stats.batchSize;
-                    stats.records += stats.batchSize;
+                    bulkRun(batch.batchSize);
+                    batch.statements += batch.batchSize;
+                    batch.records += batch.batchSize;
                     break;
                 case "BATCH":
-                    batchRun(stats.batchSize);
-                    stats.statements += 1;
-                    stats.records += stats.batchSize;
+                    batchRun(batch.batchSize);
+                    batch.statements += 1;
+                    batch.records += batch.batchSize;
                     break;
                 default:
                     // ignore
             }
         }
-        stats.status = "DONE";
+        batch.status = "DONE";
     }
 
     @Transactional
@@ -116,15 +116,15 @@ public class DataLoadResource {
     }
 
     @Transactional
-    public void updateStats(Stats stats) {
+    public void updateStats(Batch batch) {
         try {
             Thread.sleep(30000);
         }
         catch (InterruptedException ignore) {
         }
-        Stats.updateStatistics(stats);
-        if (Instant.now().isBefore(stats.startTime.plusSeconds(stats.duration * 60 + 1))) {
-            CompletableFuture.runAsync(() -> updateStats(stats));
+        Batch.updateStatistics(batch);
+        if (Instant.now().isBefore(batch.startTime.plusSeconds(batch.duration * 60 + 1))) {
+            CompletableFuture.runAsync(() -> updateStats(batch));
         }
     }
 }

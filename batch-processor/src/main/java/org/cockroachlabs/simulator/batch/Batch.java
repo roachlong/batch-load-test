@@ -1,4 +1,4 @@
-package org.cockroachlabs.simulator;
+package org.cockroachlabs.simulator.batch;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.persistence.*;
@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Entity
-public class Stats extends PanacheEntityBase implements Serializable {
+public class Batch extends PanacheEntityBase implements Serializable {
 
     @Id
     @Column(nullable = false, updatable = false)
@@ -28,19 +28,19 @@ public class Stats extends PanacheEntityBase implements Serializable {
     public Integer records;
     public Double throughput;
 
-    public static List<Stats> findAllStats() {
+    public static List<Batch> findAllStats() {
         String sql = """
         select *
-        from stats
+        from batch
         as of system time follower_read_timestamp()
         order by starttime desc;
         """;
-        return getEntityManager().createNativeQuery(sql, Stats.class).getResultList();
+        return getEntityManager().createNativeQuery(sql, Batch.class).getResultList();
     }
 
-    public static void updateStatistics(Stats stats) {
+    public static void updateStatistics(Batch batch) {
         String sql = """
-        update stats
+        update batch
         set status = :status,
             elapsed = :elapsed,
             statements = statements + :statements,
@@ -48,18 +48,18 @@ public class Stats extends PanacheEntityBase implements Serializable {
             throughput = (records + :records) / :elapsed
         where id = :id;
         """;
-        stats.elapsed = stats.startTime.until(Instant.now(), ChronoUnit.SECONDS);
-        if (stats.elapsed > stats.duration * 60) {
-            stats.elapsed = stats.duration * 60L;
+        batch.elapsed = batch.startTime.until(Instant.now(), ChronoUnit.SECONDS);
+        if (batch.elapsed > batch.duration * 60) {
+            batch.elapsed = batch.duration * 60L;
         }
         getEntityManager().createNativeQuery(sql)
-                .setParameter("status", stats.status)
-                .setParameter("elapsed", stats.elapsed)
-                .setParameter("statements", stats.statements)
-                .setParameter("records", stats.records)
-                .setParameter("id", stats.id)
+                .setParameter("status", batch.status)
+                .setParameter("elapsed", batch.elapsed)
+                .setParameter("statements", batch.statements)
+                .setParameter("records", batch.records)
+                .setParameter("id", batch.id)
                 .executeUpdate();
-        stats.statements = 0;
-        stats.records = 0;
+        batch.statements = 0;
+        batch.records = 0;
     }
 }

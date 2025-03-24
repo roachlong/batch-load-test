@@ -80,7 +80,7 @@ cd batch-processor
 mvn quarkus:dev
 ```
 
-Open http://localhost:8090/service in a browser, and you should be presented with a form to submit simple batch workloads.  After the test is submitted the screen will refresh to show some basic stats for the batch process.
+Open http://localhost:8090/batch/service in a browser, and you should be presented with a form to submit simple batch workloads.  After the test is submitted the screen will refresh to show some basic batch for the batch process.
 
 <img width="1324" alt="image" src="https://github.com/user-attachments/assets/525ac09e-9ef3-453f-ba76-28a26b436214" />
 

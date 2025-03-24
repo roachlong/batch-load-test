@@ -3,6 +3,7 @@ package org.cockroachlabs.simulator;
 import io.quarkus.test.TestTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.persistence.EntityNotFoundException;
+import org.cockroachlabs.simulator.batch.Record;
 import org.junit.jupiter.api.Test;
 
 import java.sql.SQLException;
@@ -15,22 +16,22 @@ public class RecordRepositoryTest {
     @Test
     @TestTransaction
     public void shouldCreateAndFindAnEntity() throws SQLException {
-        long count = Record.count();
-        int listAll = Record.listAll().size();
+        long count = org.cockroachlabs.simulator.batch.Record.count();
+        int listAll = org.cockroachlabs.simulator.batch.Record.listAll().size();
         assertEquals(count, listAll);
-        Record entity = new Record("test");
+        org.cockroachlabs.simulator.batch.Record entity = new org.cockroachlabs.simulator.batch.Record("test");
 
-        Record.persist(entity);
+        org.cockroachlabs.simulator.batch.Record.persist(entity);
         assertNotNull(entity.id);
 
-        assertEquals(count + 1, Record.count());
+        assertEquals(count + 1, org.cockroachlabs.simulator.batch.Record.count());
 
-        entity = Record.findById(entity.id);
-        entity = Record.findByName(entity.processName).orElseThrow(EntityNotFoundException::new);
+        entity = org.cockroachlabs.simulator.batch.Record.findById(entity.id);
+        entity = org.cockroachlabs.simulator.batch.Record.findByName(entity.processName).orElseThrow(EntityNotFoundException::new);
         assertEquals("test", entity.processName);
-        assertFalse(Record.findContainName("test").isEmpty());
+        assertFalse(org.cockroachlabs.simulator.batch.Record.findContainName("test").isEmpty());
 
-        Record.deleteById(entity.id);
+        org.cockroachlabs.simulator.batch.Record.deleteById(entity.id);
         assertEquals(count, Record.count());
     }
 }

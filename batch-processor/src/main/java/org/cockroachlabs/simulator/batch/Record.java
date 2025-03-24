@@ -1,4 +1,4 @@
-package org.cockroachlabs.simulator;
+package org.cockroachlabs.simulator.batch;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.persistence.*;
