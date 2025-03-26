@@ -1,20 +1,20 @@
 {#include base.html}
-{#title}Execute Batch{/title}
+{#title}Run Transactions{/title}
 {#body}
-Use the form below to submit a simple batch load test.
+Use the form below to submit a simple transaction load test.<br/>
+<b>Note</b>: this test requires you to update the following cluster setting in CRDB.<br/>
+<code>set cluster setting sql.multiple_modifications_of_table.enabled = true;</code>
 <form id="newTestForm" method="post">
     <input type="hidden" name="{inject:csrf.parameterName}" value="{inject:csrf.token}" />
     <div class="form-group mt-3">
         <label for="type">Type</label>
         <select class="form-control" name="type" id="type" aria-describedby="typeHelp">
-            <option>SINGLE</option>
-            <option>BATCH</option>
-            <option selected="true">MULTI-VALUE</option>
+            <option>INDIVIDUAL</option>
+            <option selected="true">COMBINED</option>
         </select>
         <small id="typeHelp" class="form-text text-muted">
-            SINGLE for single statement execution,<br/>
-            BATCH for execution of a statement batch,<br/>
-            and MULTI-VALUE for execution of multi-value inserts
+            INDIVIDUAL to execute each part of a multi-statement transaction individually,<br/>
+            and COMBINED to merge each part of a multi-statement transaction into one CTE statement
         </small>
     </div>
     <div class="form-group mt-3">
@@ -25,17 +25,17 @@ Use the form below to submit a simple batch load test.
         </small>
     </div>
     <div class="form-group mt-3">
-        <label for="size">Batch Size</label>
+        <label for="size">Object Count</label>
         <input type="number" class="form-control" name="size" id="size" min="1" step="1" value="128" aria-describedby="sizeHelp"/>
         <small id="sizeHelp" class="form-text text-muted">
-            does not apply for single statement execution
+            the number of object references you want to create during the test
         </small>
     </div>
     <div class="form-group mt-3">
         <label for="connections">Connections</label>
         <input type="number" class="form-control" name="connections" id="connections" min="1" step="1" value="4" aria-describedby="connectionsHelp"/>
         <small id="connectionsHelp" class="form-text text-muted">
-            how many connections will be used to execute the batch
+            how many connections will be used to execute the test run
         </small>
     </div>
     <button type="submit" class="btn btn-primary mt-3">Submit</button>
@@ -52,7 +52,7 @@ Use the form below to submit a simple batch load test.
             e.preventDefault();
             $.ajax({
                 type: "POST",
-                url: "/batch/service",
+                url: "/transaction/service",
                 data: newTestForm.serialize()
             }).done(data => {
                 setTimeout(loadStats, 5000);
@@ -66,7 +66,7 @@ Use the form below to submit a simple batch load test.
             headers: {
                 Accept: "text/html",
             },
-            url: "/batch/service/stats"
+            url: "/transaction/service/stats"
         }).done(data => {
             $(".statsContainer").html(data);
         });

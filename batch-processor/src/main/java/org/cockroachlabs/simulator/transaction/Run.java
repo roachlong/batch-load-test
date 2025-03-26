@@ -1,4 +1,4 @@
-package org.cockroachlabs.simulator.batch;
+package org.cockroachlabs.simulator.transaction;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.persistence.*;
@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Entity
-public class Batch extends PanacheEntityBase implements Serializable {
+public class Run extends PanacheEntityBase implements Serializable {
 
     @Id
     @Column(nullable = false, updatable = false)
@@ -26,44 +26,44 @@ public class Batch extends PanacheEntityBase implements Serializable {
     public Integer connections;
     public Long transactions;
     public Long statements;
-    public Long records;
+    public Long modifications;
     public Double throughput;
 
-    public static List<Batch> findAllStats() {
+    public static List<Run> findAllStats() {
         String sql = """
         select *
-        from batch
+        from run
         as of system time follower_read_timestamp()
         order by starttime desc;
         """;
-        return getEntityManager().createNativeQuery(sql, Batch.class).getResultList();
+        return getEntityManager().createNativeQuery(sql, Run.class).getResultList();
     }
 
-    public static void updateStatistics(Batch batch) {
+    public static void updateStatistics(Run run) {
         String sql = """
-        update batch
+        update run
         set status = :status,
             elapsed = :elapsed,
             transactions = transactions + :transactions,
             statements = statements + :statements,
-            records = records + :records,
-            throughput = (records + :records) / :elapsed
+            modifications = modifications + :modifications,
+            throughput = (modifications + :modifications) / :elapsed
         where id = :id;
         """;
-        batch.elapsed = batch.startTime.until(Instant.now(), ChronoUnit.SECONDS);
-        if (batch.elapsed > batch.duration * 60) {
-            batch.elapsed = batch.duration * 60L;
+        run.elapsed = run.startTime.until(Instant.now(), ChronoUnit.SECONDS);
+        if (run.elapsed > run.duration * 60) {
+            run.elapsed = run.duration * 60L;
         }
         getEntityManager().createNativeQuery(sql)
-                .setParameter("status", batch.status)
-                .setParameter("elapsed", batch.elapsed)
-                .setParameter("transactions", batch.transactions)
-                .setParameter("statements", batch.statements)
-                .setParameter("records", batch.records)
-                .setParameter("id", batch.id)
+                .setParameter("status", run.status)
+                .setParameter("elapsed", run.elapsed)
+                .setParameter("transactions", run.transactions)
+                .setParameter("statements", run.statements)
+                .setParameter("modifications", run.modifications)
+                .setParameter("id", run.id)
                 .executeUpdate();
-        batch.transactions = 0L;
-        batch.statements = 0L;
-        batch.records = 0L;
+        run.transactions = 0L;
+        run.statements = 0L;
+        run.modifications = 0L;
     }
 }

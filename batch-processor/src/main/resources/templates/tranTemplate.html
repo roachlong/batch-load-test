@@ -3,13 +3,13 @@
     <table class="table">
         <thead><tr>
             <th scope="col">STATUS</th>
-            <th scope="col">BATCH SIZE</th>
+            <th scope="col"># OBJECTS</th>
             <th scope="col">DURATION</th>
             <th scope="col">ELAPSED</th>
             <th scope="col">CONN</th>
             <th scope="col">TXN</th>
             <th scope="col">STMT</th>
-            <th scope="col">INS</th>
+            <th scope="col">MOD</th>
             <th scope="col">THROUGHPUT</th>
             <th scope="col">START TIME</th>
         </tr></thead>
@@ -17,13 +17,13 @@
         {#for stat in stats}
         <tr>
             <td><em><strong>{stat.type} - {stat.status}</strong></em></td>
-            <td>{stat.size.formatNumber} records</td>
+            <td>{stat.size.formatNumber}</td>
             <td>{stat.duration.formatNumber} min</td>
             <td>{stat.elapsed.formatNumber} sec</td>
             <td>{stat.connections.formatNumber}</td>
             <td>{stat.transactions.formatNumber}</td>
             <td>{stat.statements.formatNumber}</td>
-            <td>{stat.records.formatNumber}</td>
+            <td>{stat.modifications.formatNumber}</td>
             <td>{stat.throughput.formatNumber} per sec</td>
             <td><small>{stat.startTime}</small></td>
         </tr>

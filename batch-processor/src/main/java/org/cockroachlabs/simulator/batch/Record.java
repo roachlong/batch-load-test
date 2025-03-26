@@ -25,8 +25,7 @@ public class Record extends PanacheEntityBase {
     public Boolean leader = Boolean.FALSE;
 
     public Record() {
-        this.processName = AREA[random.nextInt(AREA.length)] + "_" + SERVICE[random.nextInt(SERVICE.length)];
-        this.leader = Math.random() <= 0.1;
+        this(AREA[random.nextInt(AREA.length)] + "_" + SERVICE[random.nextInt(SERVICE.length)]);
     }
 
     public Record(String processName) {
@@ -42,7 +41,7 @@ public class Record extends PanacheEntityBase {
         return Record.list("processName like ?1", "%" + name + "%");
     }
 
-    public static void multiValueInsert(List<Record> records) {
+    public static int multiValueInsert(List<Record> records) {
         String sql = """
         insert into record (process_id, processname, updatedon, createdon, leader) values
         """;
@@ -59,6 +58,6 @@ public class Record extends PanacheEntityBase {
             values.add(format);
         }
         sql += String.join(", ", values) + ";";
-        getEntityManager().createNativeQuery(sql).executeUpdate();
+        return getEntityManager().createNativeQuery(sql).executeUpdate();
     }
 }

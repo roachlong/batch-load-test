@@ -1,6 +1,7 @@
 package org.cockroachlabs.simulator.batch;
 
 import jakarta.inject.Inject;
+import jakarta.persistence.PersistenceException;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
@@ -12,7 +13,6 @@ import org.apache.commons.lang3.SerializationUtils;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 @Path("/batch/service")
@@ -54,10 +54,11 @@ public class DataLoadResource {
         batch.status = "RUNNING";
         batch.duration = duration;
         batch.elapsed = 0L;
-        batch.batchSize = type.equals("SINGLE") ? 1 : size;
+        batch.size = type.equals("SINGLE") ? 1 : size;
         batch.connections = connections;
-        batch.statements = 0;
-        batch.records = 0;
+        batch.transactions = 0L;
+        batch.statements = 0L;
+        batch.records = 0L;
         batch.throughput = 0.0;
         Batch.persist(batch);
         for (int i = 0; i < connections; i++) {
@@ -71,21 +72,31 @@ public class DataLoadResource {
         CompletableFuture.runAsync(() -> updateStats(batch));
         Instant endTime = batch.startTime.plusSeconds(batch.duration * 60);
         while (Instant.now().isBefore(endTime)) {
+            int records = 0;
             switch (batch.type) {
                 case "SINGLE":
-                    singleRun();
-                    batch.statements += 1;
-                    batch.records += 1;
+                    records = singleRun();
+                    if (records > 0) {
+                        batch.transactions += 1;
+                        batch.statements += 1;
+                        batch.records += records;
+                    }
                     break;
                 case "BATCH":
-                    batchRun(batch.batchSize);
-                    batch.statements += batch.batchSize;
-                    batch.records += batch.batchSize;
+                    records = batchRun(batch.size);
+                    if (records > 0) {
+                        batch.transactions += 1;
+                        batch.statements += batch.size;
+                        batch.records += records;
+                    }
                     break;
                 case "MULTI-VALUE":
-                    multiValueRun(batch.batchSize);
-                    batch.statements += 1;
-                    batch.records += batch.batchSize;
+                    records = multiValueRun(batch.size);
+                    if (records > 0) {
+                        batch.transactions += 1;
+                        batch.statements += 1;
+                        batch.records += records;
+                    }
                     break;
                 default:
                     // ignore
@@ -95,24 +106,65 @@ public class DataLoadResource {
     }
 
     @Transactional
-    public void singleRun() {
-        Record.persist(new Record());
+    public int singleRun() {
+        var retries = 0;
+        while (retries < 10) {
+            try {
+                Record.persist(new Record());
+                return 1;
+            } catch (PersistenceException e) {
+                retries++;
+                try {
+                    Thread.sleep(1000L * retries);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        }
+        return 0;
     }
 
     @Transactional
-    public void batchRun(int batchSize) {
-        Record.persist(IntStream.range(0, batchSize)
-                .mapToObj(x -> new Record())
-                .collect(Collectors.toList())
-        );
+    public int batchRun(int size) {
+        var retries = 0;
+        while (retries < 10) {
+            try {
+                Record.persist(IntStream.range(0, size)
+                        .mapToObj(x -> new Record())
+                        .toList()
+                );
+                return size;
+            } catch (PersistenceException e) {
+                retries++;
+                try {
+                    Thread.sleep(1000L * retries);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        }
+        return 0;
     }
 
     @Transactional
-    public void multiValueRun(int batchSize) {
-        Record.multiValueInsert(IntStream.range(0, batchSize)
-                .mapToObj(x -> new Record())
-                .collect(Collectors.toList())
-        );
+    public int multiValueRun(int size) {
+        var retries = 0;
+        while (retries < 10) {
+            try {
+                return Record.multiValueInsert(IntStream.range(0, size)
+                        .mapToObj(x -> new Record())
+                        .toList()
+                );
+            } catch (PersistenceException e) {
+                retries++;
+                try {
+                    Thread.sleep(1000L * retries);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        }
+        return 0;
     }
 
     @Transactional
@@ -120,10 +172,24 @@ public class DataLoadResource {
         try {
             Thread.sleep(30000);
         }
-        catch (InterruptedException ignore) {
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
-        Batch.updateStatistics(batch);
-        if (Instant.now().isBefore(batch.startTime.plusSeconds(batch.duration * 60 + 1))) {
+        var retries = 0;
+        while (retries < 10) {
+            try {
+                Batch.updateStatistics(batch);
+                break;
+            } catch (PersistenceException e) {
+                retries++;
+                try {
+                    Thread.sleep(1000L * retries);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        }
+        if (Instant.now().isBefore(batch.startTime.plusSeconds(batch.duration * 60 + 30))) {
             CompletableFuture.runAsync(() -> updateStats(batch));
         }
     }
