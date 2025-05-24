@@ -38,16 +38,16 @@ WITH params AS (
     -- extract the four pieces from the exception
     
     substring(exception_str
-      FROM 'TransactionRetryWithProtoRefreshError:[[:space:]]*([A-Za-z_]+):'
+      FROM 'TransactionRetryWithProtoRefreshError:[[:space:]]*([A-Za-z_()]+):'
     ) AS retry_error_type,
 
     substring(exception_str
-      FROM 'write for key[[:space:]]*([^ ]+)'
+      FROM '[[:space:]]*key=([^ ]+)'
     ) AS contention_key,
 
     to_timestamp(
       substring(exception_str
-        FROM 'timestamp[[:space:]]*([0-9]+\.[0-9]+)'
+        FROM '[[:space:]]*ts=([0-9]+\.[0-9]+)'
       )::FLOAT8
     )::timestamptz AS conflict_ts,
 
@@ -91,7 +91,7 @@ insights AS (
   WHERE ci.txn_id::STRING LIKE params.txn_id_prefix || '%'
     AND ci.status = 'Failed'
     AND ci.last_error_redactable LIKE '%' || params.retry_error_type || '%'
-    AND ci.start_time >= params.conflict_ts
+    AND ci.start_time BETWEEN params.conflict_ts - INTERVAL '30 seconds' AND params.conflict_ts + INTERVAL '30 seconds'
     AND (params.in_app_name IS NULL OR ci.app_name = params.in_app_name)
   ORDER BY ci.start_time
   LIMIT 1
@@ -128,23 +128,23 @@ transactions AS (
       THEN 'blocking'
       ELSE 'waiting'
     END AS role,
-	f.collection_ts,
-	tx.aggregated_ts,
-	tx.fingerprint_id,
-	tx.app_name,
-	f.database_name,
-	f.schema_name,
-	f.table_name,
-	f.index_name,
-	tx.metadata,
-	tx.statistics,
-	tx.aggregation_interval,
-	f.contention_type,
-	f.stmt_fingerprint_id
+    f.collection_ts,
+    tx.aggregated_ts,
+    tx.fingerprint_id,
+    tx.app_name,
+    f.database_name,
+    f.schema_name,
+    f.table_name,
+    f.index_name,
+    tx.metadata,
+    tx.statistics,
+    tx.aggregation_interval,
+    f.contention_type,
+    f.stmt_fingerprint_id
   FROM crdb_internal.transaction_statistics AS tx
   JOIN failed AS f
     ON tx.fingerprint_id IN (f.blocking_txn_fingerprint_id, f.waiting_txn_fingerprint_id)
-   AND tx.aggregated_ts = date_trunc('hour', f.collection_ts)
+   AND tx.aggregated_ts BETWEEN date_trunc('hour', f.collection_ts) AND date_trunc('hour', f.collection_ts) + INTERVAL '1 hour'
    AND (
      (
        tx.fingerprint_id = f.blocking_txn_fingerprint_id
