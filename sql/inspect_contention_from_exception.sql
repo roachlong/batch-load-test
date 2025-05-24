@@ -120,6 +120,29 @@ failed AS (
   SELECT *
   FROM insights
   WHERE NOT EXISTS (SELECT 1 FROM contention)
+  
+  UNION ALL
+
+  -- if *no* failed record exists in insights, find closest match
+  SELECT
+    start_time::TIMESTAMPTZ AS collection_ts,
+    NULL AS blocking_txn_fingerprint_id,
+    txn_fingerprint_id AS waiting_txn_fingerprint_id,
+    database_name,
+    app_name,
+    in_schema_name AS schema_name,
+    NULL AS table_name,
+    NULL AS index_name,
+    NULL AS contention_type,
+    stmt_fingerprint_id
+  FROM crdb_internal.cluster_execution_insights, params
+  WHERE txn_id::STRING LIKE params.txn_id_prefix || '%'
+	AND start_time BETWEEN params.conflict_ts - INTERVAL '30 seconds' AND params.conflict_ts + INTERVAL '30 seconds'
+	AND (params.in_app_name IS NULL OR app_name = params.in_app_name)
+	AND query NOT LIKE 'SHOW%'
+	AND NOT EXISTS (SELECT 1 FROM insights)
+  ORDER BY 1 DESC
+  LIMIT 1
 ),
 transactions AS (
   SELECT
